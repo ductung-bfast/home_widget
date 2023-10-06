@@ -40,20 +40,30 @@ class HomeWidgetPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                 if (call.hasArgument("id") && call.hasArgument("data")) {
                     val id = call.argument<String>("id")
                     val data = call.argument<Any>("data")
-                    val prefs = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE).edit()
+                    val prefs = TinyDB(context, PREFERENCES)
                     if(data != null) {
                         when (data) {
                             is Boolean -> prefs.putBoolean(id, data)
                             is Float -> prefs.putFloat(id, data)
                             is String -> prefs.putString(id, data)
-                            is Double -> prefs.putLong(id, java.lang.Double.doubleToRawLongBits(data))
+                            is Long -> prefs.putLong(id, data)
                             is Int -> prefs.putInt(id, data)
+                            is Double -> prefs.putDouble(id, data)
+                            is List<*> -> {
+                                val list = arrayListOf<String>()
+                                for (i in data) {
+                                    if (i is String) {
+                                        list.add(i)
+                                    }
+                                }
+                                prefs.putListString(id, list)
+                            }
                             else -> result.error("-10", "Invalid Type ${data!!::class.java.simpleName}. Supported types are Boolean, Float, String, Double, Long", IllegalArgumentException())
                         }
                     } else {
                         prefs.remove(id);
                     }
-                    result.success(prefs.commit())
+                    result.success(true)
                 } else {
                     result.error("-1", "InvalidArguments saveWidgetData must be called with id and data", IllegalArgumentException())
                 }
@@ -63,15 +73,11 @@ class HomeWidgetPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                     val id = call.argument<String>("id")
                     val defaultValue = call.argument<Any>("defaultValue")
 
-                    val prefs = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
+                    val prefs = TinyDB(context, PREFERENCES)
 
                     val value = prefs.all[id] ?: defaultValue
 
-                    if(value is Long) {
-                        result.success(java.lang.Double.longBitsToDouble(value))
-                    } else {
-                        result.success(value)
-                    }
+                    result.success(value)
                 } else {
                     result.error("-2", "InvalidArguments getWidgetData must be called with id", IllegalArgumentException())
                 }
@@ -138,7 +144,7 @@ class HomeWidgetPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         fun getHandle(context: Context): Long =
                 context.getSharedPreferences(INTERNAL_PREFERENCES, Context.MODE_PRIVATE).getLong(CALLBACK_HANDLE, 0)
 
-        fun getData(context: Context): SharedPreferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
+        fun getData(context: Context): TinyDB = TinyDB(context, PREFERENCES)
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
