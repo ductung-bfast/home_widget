@@ -219,7 +219,11 @@ public class TinyDB {
      * @return long value at 'key' or 0 if key not found
      */
     public long getLong(String key) {
-        return preferences.getLong(key, 0);
+        try {
+            return preferences.getLong(key, 0);
+        } catch (ClassCastException e) {
+            return 0;
+        }
     }
 
     /**
